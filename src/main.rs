@@ -32,7 +32,7 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
         let line = line?;
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() != 8 {
-            // Some expected fields are missing.
+            // Some expected fields are missing, ignore the line.
             continue;
         }
 
@@ -77,6 +77,17 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
     Ok(locations)
 }
 
+fn lookup_ip(ip: Ipv4Addr, database: &Option<Vec<GeoLocation>>) -> Option<String> {
+    if let Some(locations) = database {
+        for location in locations {
+            if ip >= location.network_range_start && ip <= location.network_range_end {
+                return Some(format!("{},{}", location.country_code, location.city));
+            }
+        }
+    }
+    None
+}
+
 fn main() {
     let mut database: Option<Vec<GeoLocation>> = None;
 
@@ -84,21 +95,35 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input);
         let trimmed_input = input.trim();
-        match trimmed_input {
-            "LOAD" => match load_database() {
+        let command: Vec<&str>= trimmed_input.split_whitespace().collect();
+        match command.as_slice() {
+            ["LOAD"] => match load_database() {
                 Ok(result) => {
                     database = Some(result);
                     println!("OK");
                 }
                 Err(err) => {
-                    eprintln!("Failed to load database: {}", err);
                     println!("ERR");
                 }
             },
-            "EXIT" => {
+            ["LOOKUP", ip] => {
+                match &database {
+                    Some(db) => {
+                        match ip.parse::<Ipv4Addr>() {
+                            Ok(ip) => match lookup_ip(ip, &database) {
+                                Some(location) => println!("{}", location),
+                                None => println!("ERR"),
+                            },
+                            Err(_) => println!("ERR"),
+                        }
+                    },
+                    None => println!("ERR"),
+                };
+            }
+            ["EXIT"] => {
                 println!("OK");
                 break;
-            },
+            }
             _ => println!("ERR"),
         };
     }
