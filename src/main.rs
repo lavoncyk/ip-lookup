@@ -7,7 +7,6 @@ struct GeoLocation {
     network_range_start: Ipv4Addr,
     network_range_end: Ipv4Addr,
     country_code: String,
-    country_name: String,
     city: String,
 }
 
@@ -54,14 +53,12 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
         };
 
         let country_code = parts[2].to_string();
-        let country_name = parts[3].to_string();
         let city = parts[5].to_string();
 
         let location = GeoLocation {
             network_range_start,
             network_range_end,
             country_code,
-            country_name,
             city,
         };
 
