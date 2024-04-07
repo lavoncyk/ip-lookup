@@ -40,7 +40,7 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
             .trim_matches(&[' ', '"'])
             .parse::<u32>() {
                 Ok(val) => int_to_ipv4_addr(val),
-                Err(err) => {
+                Err(_) => {
                     continue;
                 }
         };
@@ -75,26 +75,24 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
     Ok(locations)
 }
 
-fn lookup_ip(ip: Ipv4Addr, database: &Option<Vec<GeoLocation>>) -> Option<String> {
-    if let Some(locations) = database {
-        let mut start: usize = 0;
-        let mut end = locations.len();
-        while start <= end {
-            let mid = (start + end) >> 1;
+fn lookup_ip(ip: Ipv4Addr, database: &Vec<GeoLocation>) -> Option<String> {
+    let mut start: usize = 0;
+    let mut end = database.len();
+    while start <= end {
+        let mid = (start + end) >> 1;
 
-            if ip >= locations[mid].network_range_start
-               && ip <= locations[mid].network_range_end {
-                return Some(
-                    format!("{},{}", locations[mid].country_code, locations[mid].city),
-                );
-            }
+        if ip >= database[mid].network_range_start
+           && ip <= database[mid].network_range_end {
+            return Some(
+                format!("{},{}", database[mid].country_code, database[mid].city),
+            );
+        }
 
-            else if ip < locations[mid].network_range_start {
-                end = mid - 1;
-            }
-            else {
-                start = mid + 1;
-            }
+        else if ip < database[mid].network_range_start {
+            end = mid - 1;
+        }
+        else {
+            start = mid + 1;
         }
     }
     None
@@ -105,7 +103,10 @@ fn main() {
 
     loop {
         let mut input = String::new();
-        io::stdin().read_line(&mut input);
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+
         let trimmed_input = input.trim();
         let command: Vec<&str>= trimmed_input.split_whitespace().collect();
         match command.as_slice() {
@@ -114,7 +115,7 @@ fn main() {
                     database = Some(result);
                     println!("OK");
                 }
-                Err(err) => {
+                Err(_) => {
                     println!("ERR");
                 }
             },
@@ -122,7 +123,7 @@ fn main() {
                 match &database {
                     Some(db) => {
                         match ip.parse::<Ipv4Addr>() {
-                            Ok(ip) => match lookup_ip(ip, &database) {
+                            Ok(ip) => match lookup_ip(ip, db) {
                                 Some(location) => println!("{}", location),
                                 None => println!("ERR"),
                             },
