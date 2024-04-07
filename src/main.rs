@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::net::Ipv4Addr;
+use std::usize;
 
 #[derive(Debug)]
 struct GeoLocation {
@@ -76,9 +77,23 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
 
 fn lookup_ip(ip: Ipv4Addr, database: &Option<Vec<GeoLocation>>) -> Option<String> {
     if let Some(locations) = database {
-        for location in locations {
-            if ip >= location.network_range_start && ip <= location.network_range_end {
-                return Some(format!("{},{}", location.country_code, location.city));
+        let mut start: usize = 0;
+        let mut end = locations.len();
+        while start <= end {
+            let mid = (start + end) >> 1;
+
+            if ip >= locations[mid].network_range_start
+               && ip <= locations[mid].network_range_end {
+                return Some(
+                    format!("{},{}", locations[mid].country_code, locations[mid].city),
+                );
+            }
+
+            else if ip < locations[mid].network_range_start {
+                end = mid - 1;
+            }
+            else {
+                start = mid + 1;
             }
         }
     }
