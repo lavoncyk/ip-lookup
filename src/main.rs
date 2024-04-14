@@ -100,7 +100,7 @@ fn lookup_ip(ip: Ipv4Addr, database: &Vec<GeoLocation>) -> Option<String> {
 
 fn main() {
     let mut database: Option<Vec<GeoLocation>> = None;
-
+    println!("READY");
     loop {
         let mut input = String::new();
         io::stdin()
