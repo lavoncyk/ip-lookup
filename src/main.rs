@@ -25,10 +25,9 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
 
     let file = File::open("data/database.csv")?;
     let reader = io::BufReader::new(file);
+    let chars_to_trim = [' ', '"'];
 
-    let mut total_lines = 0;
     for line in reader.lines() {
-        total_lines += 1;
         let line = line?;
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() != 8 {
@@ -37,7 +36,7 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
         }
 
         let network_range_start = match parts[0]
-            .trim_matches(&[' ', '"'])
+            .trim_matches(&chars_to_trim)
             .parse::<u32>() {
                 Ok(val) => int_to_ipv4_addr(val),
                 Err(_) => {
@@ -45,7 +44,7 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
                 }
         };
         let network_range_end = match parts[1]
-            .trim_matches(&[' ', '"'])
+            .trim_matches(&chars_to_trim)
             .parse::<u32>() {
                 Ok(val) => int_to_ipv4_addr(val),
                 Err(_) => {
@@ -53,8 +52,8 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
                 }
         };
 
-        let country_code = parts[2].to_string();
-        let city = parts[5].to_string();
+        let country_code = parts[2].trim_matches(&chars_to_trim).to_string();
+        let city = parts[5].trim_matches(&chars_to_trim).to_string();
 
         let location = GeoLocation {
             network_range_start,
@@ -65,12 +64,6 @@ fn load_database() -> io::Result<Vec<GeoLocation>> {
 
         locations.push(location);
     }
-
-    println!(
-        "Debugging: {}/{} lines parsed",
-        locations.len(),
-        total_lines,
-    );
 
     Ok(locations)
 }
